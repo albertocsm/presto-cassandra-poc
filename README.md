@@ -1,2 +1,2 @@
-# presto-cassandra-poc
-Small POC with PrestoDB and Cassandra
+# Small POC with PrestoDB and Cassandra
+TBD
