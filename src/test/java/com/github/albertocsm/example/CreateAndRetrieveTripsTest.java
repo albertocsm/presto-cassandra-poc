@@ -1,56 +1,55 @@
 package com.github.albertocsm.example;
 
+import com.datastax.driver.core.Session;
+import com.google.common.base.Stopwatch;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.datastax.driver.core.Session;
-import com.google.common.base.Stopwatch;
-
 public class CreateAndRetrieveTripsTest {
 
   // members
   public static final String CASSANDRA_KEYSPACE = "example";
   public static final String CASSANDRA_TABLE_NAME = "trips";
-  public static final String CASSANDRA_KEYSPACE_TABLE_NAME = CASSANDRA_KEYSPACE
-      + "." + CASSANDRA_TABLE_NAME;
-  private static final Logger log = LoggerFactory
-      .getLogger(CreateAndRetrieveTripsTest.class);
+  public static final String CASSANDRA_KEYSPACE_TABLE_NAME = CASSANDRA_KEYSPACE + "." + CASSANDRA_TABLE_NAME;
+  private static final Logger log = LoggerFactory.getLogger(CreateAndRetrieveTripsTest.class);
   private Session session;
   private CassandraClient client;
 
   @BeforeClass
-  public void setUpClass() throws Exception {
+  public void setUpClass()
+    throws Exception {
 
     client = new CassandraClient();
     client.initialize("172.17.0.2");
 
     session = client.openSession();
 
-    session//
-        .execute("CREATE KEYSPACE IF NOT EXISTS "
-            + CASSANDRA_KEYSPACE
-            + " WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};");
+    session.execute(
+        String.format(
+            "CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class':'SimpleStrategy', 'replication_factor':1};",
+            CASSANDRA_KEYSPACE));
 
-    session//
-        .execute("CREATE TABLE IF NOT EXISTS " + CASSANDRA_KEYSPACE_TABLE_NAME
-            + " (id bigint PRIMARY KEY, day bigint);");
+    session.execute(
+        String.format(
+            "CREATE TABLE IF NOT EXISTS %s (id bigint PRIMARY KEY, day bigint);", CASSANDRA_KEYSPACE_TABLE_NAME));
 
     session.close();
   }
 
   @AfterClass
-  public void tearDownClass() throws Exception {
+  public void tearDownClass()
+    throws Exception {
 
   }
 
   @Test(groups = "setup")
   public void create_trips() {
+
     int totalTrips = 2000000;
     int batchSize = 10000;
 
@@ -74,10 +73,11 @@ public class CreateAndRetrieveTripsTest {
     for (int i = 0; i < batchTotalTrips; i++) {
 
       t = new Trips(tripId, r.nextInt(high - low) + low);
-      session.execute(//
-          "INSERT INTO " + CASSANDRA_KEYSPACE_TABLE_NAME//
-              + " (id, day) "//
-              + "VALUES (" + t.getId() + "," + t.getDay() + ");");
+      session.execute(
+          String.format("INSERT INTO %s (id, day) VALUES (%d,%d);",
+              CASSANDRA_KEYSPACE_TABLE_NAME,
+              t.getId(),
+              t.getDay()));
 
       tripId++;
     }
@@ -87,8 +87,11 @@ public class CreateAndRetrieveTripsTest {
     // log the latency
     stopwatch.stop();
     long millis = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-    log.info(String.format("time to generate %s trips in: %s ms",
-        batchTotalTrips, millis));
+    log.info(
+        String.format(
+            "time to generate %s trips in: %s ms",
+            batchTotalTrips,
+            millis));
 
     return tripId;
   }
